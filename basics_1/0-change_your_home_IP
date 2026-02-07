@@ -1,21 +1,23 @@
 #!/usr/bin/env bash
 # Configures the local /etc/hosts file to redirect specific domains
-# Uses a method compatible with Docker/mounted files
+# Bypasses SC2001 by avoiding sed on variables and using a subshell stream
 
-# Step 1: Read the current hosts file, modify it in memory, and overwrite
-HOSTS_CONTENT=$(cat /etc/hosts)
+# Use a subshell to process the file and pipe the whole output to tee
+{
+    while IFS= read -r line; do
+        if [[ "$line" == *"localhost"* ]]; then
+            # Replace localhost line using Bash expansion
+            echo "${line/127.0.0.1/127.0.0.2}"
+        elif [[ "$line" == *"facebook.com"* ]]; then
+            # Replace facebook.com line
+            echo "8.8.8.8 facebook.com"
+        else
+            echo "$line"
+        fi
+    done < /etc/hosts
 
-# Requirement 1: Change localhost to resolve to 127.0.0.2
-# We replace 127.0.0.1 with 127.0.0.2 specifically for the localhost entry
-HOSTS_CONTENT=$(echo "$HOSTS_CONTENT" | sed 's/127.0.0.1\s*localhost/127.0.0.2 localhost/')
-
-# Requirement 2: Make facebook.com resolve to 8.8.8.8
-# Check if facebook.com exists; if so, replace. If not, append.
-if echo "$HOSTS_CONTENT" | grep -q "facebook.com"; then
-    HOSTS_CONTENT=$(echo "$HOSTS_CONTENT" | sed 's/.*facebook.com/8.8.8.8 facebook.com/')
-else
-    HOSTS_CONTENT="${HOSTS_CONTENT}\n8.8.8.8 facebook.com"
-fi
-
-# Step 3: Use tee to overwrite /etc/hosts (this works where sed -i fails)
-echo -e "$HOSTS_CONTENT" | sudo tee /etc/hosts > /dev/null
+    # If facebook.com wasn't in the file, we add it at the end
+    if ! grep -q "facebook.com" /etc/hosts; then
+        echo "8.8.8.8 facebook.com"
+    fi
+} | sudo tee /etc/hosts > /dev/null
