@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# This script displays listening TCP and UDP sockets with PID and program names
+
+sudo netstat -lpn
