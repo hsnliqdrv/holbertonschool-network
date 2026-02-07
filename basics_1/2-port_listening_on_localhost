@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# This script listens on port 98 on localhost and displays incoming text
+
+# -l: Listen mode
+# -p: Specify the port
+# -s: Specify the source interface (localhost/127.0.0.1)
+nc -l 127.0.0.1 98
